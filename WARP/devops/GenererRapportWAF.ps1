@@ -77,63 +77,63 @@ $title = "Well-Architected [pillar] Assessment"
 $reportDate = Get-Date -Format "yyyy-MM-dd-HHmm"
 $localReportDate = Get-Date -Format g
 try{
-    $tableStart = FindIndexBeginningWith $content "Catégorie,Lien-Text,Lien,Priorité,CatégorieReporting,SousCatégorieReporting,Poids,Contexte"
+    $tableStart = FindIndexBeginningWith $content "Catégorie,Lien-Texte,Lien,Priorité,CatégorieReporting,SousCatégorieReporting,Poids,Contexte"
     #Write-Debug "Tablestart: $tablestart"
     $EndStringIdentifier = $content | Where-Object{$_.Contains("--,,")} | Select-Object -Unique -First 1
-    #Write-Debug "EndStringIdentifier: $EndStringIdentifier"
+    #Write-Debug "IdentifiantFinDeChaine : $EndStringIdentifier"
     $tableEnd = $content.IndexOf($EndStringIdentifier) - 1
     #Write-Debug "Tableend: $tableend"
     $csv = $content[$tableStart..$tableEnd] | Out-File  "$workingDirectory\$reportDate.csv"
     $data = Import-Csv -Path "$workingDirectory\$reportDate.csv"
     $data | % { $_.Weight = [int]$_.Weight }
-    $pillars = $data.Category | Select-Object -Unique
+    $pillars = $data.Catégorie | Select-Object -Unique
 }
 catch{
-    Write-Host "Unable to parse the content file."
-    Write-Host "Please ensure all input files are in the correct format and aren't open in Excel or another editor which locks the file."
-    Write-Error -Message "There was a problem opening or parsing the content file ($inputfile)."
+    Write-Host "Impossible de traiter le fichier de contenu."
+    Write-Host "Assurez vous que tous les fichiers d'entrée sont dans le bon format et qu'ils ne sont pas ouverts dans Excel ou un autre éditeur qui bloque le fichier."
+    Write-Error -Message "Il y a un problème lors de l'ouverture ou du traitement du fichier de contenu ($inputfile)."
     exit
 }
 
 
-#region CSV Calculations
+#region Calculs CSV
 
-$costDescription = ($descriptionsFile | Where-Object{$_.Pillar -eq "Cost Optimization" -and $_.Category -eq "Survey Level Group"}).Description
-$operationsDescription = ($descriptionsFile | Where-Object{$_.Pillar -eq "Operational Excellence" -and $_.Category -eq "Survey Level Group"}).Description
-$performanceDescription = ($descriptionsFile | Where-Object{$_.Pillar -eq "Performance Efficiency" -and $_.Category -eq "Survey Level Group"}).Description
-$reliabilityDescription = ($descriptionsFile | Where-Object{$_.Pillar -eq "Reliability" -and $_.Category -eq "Survey Level Group"}).Description
-$securityDescription = ($descriptionsFile | Where-Object{$_.Pillar -eq "Security" -and $_.Category -eq "Survey Level Group"}).Description
+$descriptionCout = ($descriptionsFile | Where-Object{$_.Pillier -eq "Optimisation de Coût" -and $_.Catégorie -eq "Survey Level Group"}).Description
+$operationsDescription = ($descriptionsFile | Where-Object{$_.Pillier -eq "Excellence Opérationnelle" -and $_.Catégorie -eq "Survey Level Group"}).Description
+$performanceDescription = ($descriptionsFile | Where-Object{$_.Pillier -eq "Performance Efficiency" -and $_.Catégorie -eq "Survey Level Group"}).Description
+$reliabilityDescription = ($descriptionsFile | Where-Object{$_.Pillier -eq "Reliability" -and $_.Catégorie -eq "Survey Level Group"}).Description
+$descriptionSecurite = ($descriptionsFile | Where-Object{$_.Pillier -eq "Sécurité" -and $_.Catégorie -eq "Survey Level Group"}).Description
 
 function Get-PillarInfo($pillar)
 {
-    if($pillar.Contains("Cost Optimization"))
+    if($pillar.Contains("Optimisation de Coût"))
     {
-        return [pscustomobject]@{"Pillar" = $pillar; "Score" = $costScore; "Description" = $costDescription}
+        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $scoreCout; "Description" = $descriptionCout}
     }
     if($pillar.Contains("Reliability"))
     {
-        return [pscustomobject]@{"Pillar" = $pillar; "Score" = $reliabilityScore; "Description" = $reliabilityDescription}
+        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $reliabilityScore; "Description" = $reliabilityDescription}
     }
-    if($pillar.Contains("Operational Excellence"))
+    if($pillar.Contains("Excellence Opérationnelle"))
     {
-        return [pscustomobject]@{"Pillar" = $pillar; "Score" = $operationsScore; "Description" = $operationsDescription}
+        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $operationsScore; "Description" = $operationsDescription}
     }
     if($pillar.Contains("Performance Efficiency"))
     {
-        return [pscustomobject]@{"Pillar" = $pillar; "Score" = $performanceScore; "Description" = $performanceDescription}
+        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $performanceScore; "Description" = $performanceDescription}
     }
-    if($pillar.Contains("Security"))
+    if($pillar.Contains("Sécurité"))
     {
-        return [pscustomobject]@{"Pillar" = $pillar; "Score" = $securityScore; "Description" = $securityDescription}
+        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $scoreSecurite; "Description" = $descriptionSecurite}
     }
 }
 
 $overallScore = ""
-$costScore = ""
+$scoreCout = ""
 $operationsScore = ""
 $performanceScore = ""
 $reliabilityScore = ""
-$securityScore = ""
+$scoreSecurite = ""
 
 for($i=3; $i -le 8; $i++)
 {
@@ -141,15 +141,15 @@ for($i=3; $i -le 8; $i++)
     {
         $overallScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
-    if($Content[$i].Contains("Cost Optimization"))
+    if($Content[$i].Contains("Optimisation de Coût"))
     {
-        $costScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
+        $scoreCout = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
     if($Content[$i].Contains("Reliability"))
     {
         $reliabilityScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
-    if($Content[$i].Contains("Operational Excellence"))
+    if($Content[$i].Contains("Excellence Opérationnelle"))
     {
         $operationsScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
@@ -157,9 +157,9 @@ for($i=3; $i -le 8; $i++)
     {
         $performanceScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
-    if($Content[$i].Contains("Security"))
+    if($Content[$i].Contains("Sécurité"))
     {
-        $securityScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
+        $scoreSecurite = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
     if($Content[$i].Equals(",,,,,"))
     {
@@ -183,13 +183,13 @@ $endSlide = $presentation.Slides[11]
 
 #region Clean the uncategorized data
 
-if($data.PSobject.Properties.Name -contains "ReportingCategory"){
+if($data.PSobject.Properties.Name -contains "CatégorieReporting"){
     foreach($lineData in $data)
     {
         
-        if(!$lineData.ReportingCategory)
+        if(!$lineData.CatégorieReporting)
         {
-            $lineData.ReportingCategory = "Uncategorized"
+            $lineData.CatégorieReporting = "Uncategorized"
         }
     }
 }
@@ -198,7 +198,7 @@ if($data.PSobject.Properties.Name -contains "ReportingCategory"){
 
 foreach($pillar in $pillars) 
 {
-    $pillarData = $data | Where-Object{$_.Category -eq $pillar}
+    $pillarData = $data | Where-Object{$_.Catégorie -eq $pillar}
     $pillarInfo = Get-PillarInfo -pillar $pillar
     
     # Edit title & date on slide 1
@@ -219,13 +219,13 @@ foreach($pillar in $pillars)
     $newSummarySlide.Shapes[11].Left = $summBarScore
 
     $CategoriesList = New-Object System.Collections.ArrayList
-    $categories = ($pillarData | Sort-Object -Property "Weight" -Descending).ReportingCategory | Select-Object -Unique
+    $categories = ($pillarData | Sort-Object -Property "Weight" -Descending).CatégorieReporting | Select-Object -Unique
     foreach($category in $categories)
     {
-        $categoryWeight = ($pillarData | Where-Object{$_.ReportingCategory -eq $category}).Weight | Measure-Object -Sum
+        $categoryWeight = ($pillarData | Where-Object{$_.CatégorieReporting -eq $category}).Weight | Measure-Object -Sum
         $categoryScore = $categoryWeight.Sum/$categoryWeight.Count
-        $categoryWeightiestCount = ($pillarData | Where-Object{$_.ReportingCategory -eq $category}).Weight -ge $MinimumReportLevel | Measure-Object
-        $CategoriesList.Add([pscustomobject]@{"Category" = $category; "CategoryScore" = $categoryScore; "CategoryWeightiestCount" = $categoryWeightiestCount.Count}) | Out-Null
+        $categoryWeightiestCount = ($pillarData | Where-Object{$_.CatégorieReporting -eq $category}).Weight -ge $MinimumReportLevel | Measure-Object
+        $CategoriesList.Add([pscustomobject]@{"Catégorie" = $category; "CategoryScore" = $categoryScore; "CategoryWeightiestCount" = $categoryWeightiestCount.Count}) | Out-Null
     }
 
     $CategoriesList = $CategoriesList | Sort-Object -Property CategoryScore -Descending
@@ -236,13 +236,13 @@ foreach($pillar in $pillars)
     $areaIconY = @(176.4359, 217.6319, 258.3682, 299.1754, 339.8692, 382.6667, 423.9795, 461.0491)
     foreach($category in $CategoriesList)
     {
-        if($category.Category -ne "Uncategorized")
+        if($category.Catégorie -ne "Uncategorized")
         {
             try
             {
                 #$newSummarySlide.Shapes[8] #Domain 1 Icon
                 $newSummarySlide.Shapes[$counter].TextFrame.TextRange.Text = $category.CategoryWeightiestCount.ToString("#")
-                $newSummarySlide.Shapes[$counter+1].TextFrame.TextRange.Text = $category.Category
+                $newSummarySlide.Shapes[$counter+1].TextFrame.TextRange.Text = $category.Catégorie
                 $counter = $counter + 3
                 switch ($category.CategoryScore) {
                     { $_ -lt 33 } { 
@@ -286,13 +286,13 @@ foreach($pillar in $pillars)
 
     # Edit new category summary slide
 
-    foreach($category in $CategoriesList.Category)
+    foreach($category in $CategoriesList.Catégorie)
     {
-        $categoryData = $pillarData | Where-Object{$_.ReportingCategory -eq $category -and $_.Category -eq $pillar}
+        $categoryData = $pillarData | Where-Object{$_.CatégorieReporting -eq $category -and $_.Catégorie -eq $pillar}
         $categoryDataCount = ($categoryData | measure).Count
-        $categoryWeight = ($pillarData | Where-Object{$_.ReportingCategory -eq $category}).Weight | Measure-Object -Sum
+        $categoryWeight = ($pillarData | Where-Object{$_.CatégorieReporting -eq $category}).Weight | Measure-Object -Sum
         $categoryScore = $categoryWeight.Sum/$categoryWeight.Count
-        $categoryDescription = ($descriptionsFile | Where-Object{$_.Pillar -eq $pillar -and $categoryData.ReportingCategory.Contains($_.Category)}).Description
+        $categoryDescription = ($descriptionsFile | Where-Object{$_.Pillier -eq $pillar -and $categoryData.CatégorieReporting.Contains($_.Catégorie)}).Description
         $y = $categoryDataCount
         $x = 5
         if($categoryDataCount -lt 5)
