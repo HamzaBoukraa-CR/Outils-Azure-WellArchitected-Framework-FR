@@ -1,19 +1,19 @@
 ﻿[CmdletBinding()]
 param (
-    # Indicates CSV file for input
+    # Indiquer le fichier CSV en entrée
         [Parameter()][string]
     $ContentFile
 )
-<#  Instructions to use this script:
+<#  Instructions pour utiliser ce script :
 
-    Run the script!
+    Il suffit de lancer le script!
 #>
 
 
-#Get the working directory from the script
+#Prendre le dossier de travail de ce script
 $workingDirectory = (Get-Location).Path
 
-#Get the WAF report via a system dialog
+#Prendre le rapport WAF report via une boîte de dialogue
 Function Get-FileName($initialDirectory)
 {
     [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
@@ -21,7 +21,7 @@ Function Get-FileName($initialDirectory)
     $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
     $OpenFileDialog.initialDirectory = $initialDirectory
     $OpenFileDialog.filter = "CSV (*.csv)| *.csv"
-    $OpenFileDialog.Title = "Select Well-Architected Review file export"
+    $OpenFileDialog.Title = "Sélectionner le ficher de Revue de Well-Architected Framework"
     $OpenFileDialog.ShowDialog() | Out-Null
     $OpenFileDialog.filename
 }
@@ -49,25 +49,25 @@ else
         $inputFile = $ContentFile
     }
 }
-# validate our file is OK
+#Valider que le fichier est OK
 try{
     $content = Get-Content $inputfile
 }
 catch{
-    Write-Error -Message "Unable to open selected Content file."
+    Write-Error -Message "Impossible d'ouvrir le fichier de contenu sélectionné."
     exit
 }
 $inputfilename = Split-Path $inputfile -leaf
 
 #region Validate input values
 
-$templatePresentation = "$workingDirectory\PnP_PowerPointReport_Template.pptx"
+$templatePresentation = "$workingDirectory\PnP_Template_RapportPowerPoint.pptx"
 
 try{
     $descriptionsFile = Import-Csv "$workingDirectory\WAF Category Descriptions.csv"
 }
 catch{
-    Write-Error -Message "Unable to open $($workingDirectory)\WAF Category Descriptions.csv"
+    Write-Error -Message "Impossible d'ouvrir $($workingDirectory)\WAF Description de Catégories.csv"
     exit
 }
 
