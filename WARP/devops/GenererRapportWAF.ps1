@@ -61,13 +61,13 @@ $inputfilename = Split-Path $inputfile -leaf
 
 #region Validate input values
 
-$templatePresentation = "$workingDirectory\PnP_Template_RapportPowerPoint.pptx"
+$templatePresentation = "$workingDirectory\PnP_Template_Rapport_PowerPoint.pptx"
 
 try{
-    $descriptionsFile = Import-Csv "$workingDirectory\WAF Category Descriptions.csv"
+    $descriptionsFile = Import-Csv "$workingDirectory\Descriptions de Catégories WAF.csv"
 }
 catch{
-    Write-Error -Message "Impossible d'ouvrir $($workingDirectory)\WAF Description de Catégories.csv"
+    Write-Error -Message "Impossible d'ouvrir $($workingDirectory)\Descriptions de Catégories WAF.csv"
     exit
 }
 
@@ -77,7 +77,7 @@ $title = "Well-Architected [pillar] Assessment"
 $reportDate = Get-Date -Format "yyyy-MM-dd-HHmm"
 $localReportDate = Get-Date -Format g
 try{
-    $tableStart = FindIndexBeginningWith $content "Category,Link-Text,Link,Priority,ReportingCategory,ReportingSubcategory,Weight,Context"
+    $tableStart = FindIndexBeginningWith $content "Catégorie,Lien-Text,Lien,Priorité,CatégorieReporting,SousCatégorieReporting,Poids,Contexte"
     #Write-Debug "Tablestart: $tablestart"
     $EndStringIdentifier = $content | Where-Object{$_.Contains("--,,")} | Select-Object -Unique -First 1
     #Write-Debug "EndStringIdentifier: $EndStringIdentifier"
