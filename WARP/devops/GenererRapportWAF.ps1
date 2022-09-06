@@ -2,7 +2,7 @@
 param (
     # Indiquer le fichier CSV en entrée
         [Parameter()][string]
-    $ContentFile
+    $FichierContenu
 )
 <#  Instructions pour utiliser ce script :
 
@@ -11,159 +11,159 @@ param (
 
 
 #Prendre le dossier de travail de ce script
-$workingDirectory = (Get-Location).Path
+$dossierTravail = (Get-Location).Path
 
 #Prendre le rapport WAF report via une boîte de dialogue
-Function Get-FileName($initialDirectory)
+Function Prendre-NomFichier($dossierPrincipal)
 {
     [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
     
-    $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
-    $OpenFileDialog.initialDirectory = $initialDirectory
-    $OpenFileDialog.filter = "CSV (*.csv)| *.csv"
-    $OpenFileDialog.Title = "Sélectionner le ficher de Revue de Well-Architected Framework"
-    $OpenFileDialog.ShowDialog() | Out-Null
-    $OpenFileDialog.filename
+    $boiteDialogueOuvrirFichier = New-Object System.Windows.Forms.OpenFileDialog
+    $boiteDialogueOuvrirFichier.initialDirectory = $dossierPrincipal
+    $boiteDialogueOuvrirFichier.filter = "CSV (*.csv)| *.csv"
+    $boiteDialogueOuvrirFichier.Title = "Sélectionner le ficher de Revue de Well-Architected Framework"
+    $boiteDialogueOuvrirFichier.ShowDialog() | Out-Null
+    $boiteDialogueOuvrirFichier.filename
 }
 
-Function FindIndexBeginningWith($stringset, $searchterm){
-    $i=0
-    foreach ($line in $stringset){
-        if($line.StartsWith($searchterm)){
-            return $i
+Function Trouver-IndexCommencantPar($chaines, $termeRecherche){
+    $index=0
+    foreach ($ligne in $chaines){
+        if($ligne.StartsWith($termeRecherche)){
+            return $index
         }
-        $i++
+        $index++
     }
     return false
 }
 
-if([String]::IsNullOrEmpty($ContentFile))
+if([String]::IsNullOrEmpty($FichierContenu))
 {
-    $inputfile = Get-FileName $workingDirectory
+    $fichierEntree = Prendre-NomFichier $dossierTravail
 }
 else 
 {
-    if(!(Resolve-Path $ContentFile)){
-        $inputfile = Get-FileName $workingDirectory
+    if(!(Resolve-Path $FichierContenu)){
+        $fichierEntree = Prendre-NomFichier $dossierTravail
     }else{
-        $inputFile = $ContentFile
+        $fichierEntree = $FichierContenu
     }
 }
 #Valider que le fichier est OK
 try{
-    $content = Get-Content $inputfile
+    $contenu = Get-Content $fichierEntree
 }
 catch{
     Write-Error -Message "Impossible d'ouvrir le fichier de contenu sélectionné."
     exit
 }
-$inputfilename = Split-Path $inputfile -leaf
+$nomFichierEntree = Split-Path $fichierEntree -leaf
 
-#region Validate input values
+#region Valider valeurs en entrée
 
-$templatePresentation = "$workingDirectory\PnP_Template_Rapport_PowerPoint.pptx"
+$templatePresentation = "$dossierTravail\PnP_Template_Rapport_PowerPoint.pptx"
 
 try{
-    $descriptionsFile = Import-Csv "$workingDirectory\Descriptions de Catégories WAF.csv"
+    $fichierDescriptions = Import-Csv "$dossierTravail\Descriptions de Catégories WAF.csv"
 }
 catch{
-    Write-Error -Message "Impossible d'ouvrir $($workingDirectory)\Descriptions de Catégories WAF.csv"
+    Write-Error -Message "Impossible d'ouvrir $($dossierTravail)\Descriptions de Catégories WAF.csv"
     exit
 }
 
 #endregion
 
-$title = "Well-Architected [pillar] Assessment"
-$reportDate = Get-Date -Format "yyyy-MM-dd-HHmm"
-$localReportDate = Get-Date -Format g
+$titre = "Well-Architected [pillar] Assessment"
+$dateRapport = Get-Date -Format "yyyy-MM-dd-HHmm"
+$dateRapportLocale = Get-Date -Format g
 try{
-    $tableStart = FindIndexBeginningWith $content "Catégorie,Lien-Texte,Lien,Priorité,CatégorieReporting,SousCatégorieReporting,Poids,Contexte"
-    #Write-Debug "Tablestart: $tablestart"
-    $EndStringIdentifier = $content | Where-Object{$_.Contains("--,,")} | Select-Object -Unique -First 1
-    #Write-Debug "IdentifiantFinDeChaine : $EndStringIdentifier"
-    $tableEnd = $content.IndexOf($EndStringIdentifier) - 1
-    #Write-Debug "Tableend: $tableend"
-    $csv = $content[$tableStart..$tableEnd] | Out-File  "$workingDirectory\$reportDate.csv"
-    $data = Import-Csv -Path "$workingDirectory\$reportDate.csv"
-    $data | % { $_.Weight = [int]$_.Weight }
-    $pillars = $data.Catégorie | Select-Object -Unique
+    $debutTable = Trouver-IndexCommencantPar $contenu "Catégorie,Lien-Texte,Lien,Priorité,CatégorieReporting,SousCatégorieReporting,Poids,Contexte"
+    #Write-Debug "Debut Table : $debutTable"
+    $identifiantChaineFin = $contenu | Where-Object{$_.Contains("--,,")} | Select-Object -Unique -First 1
+    #Write-Debug "Identifiant de fin : $identifiantChaineFin"
+    $finTable = $contenu.IndexOf($identifiantChaineFin) - 1
+    #Write-Debug "Fin Table : $finTable"
+    $csv = $contenu[$debutTable..$finTable] | Out-File  "$dossierTravail\$dateRapport.csv"
+    $donnees = Import-Csv -Path "$dossierTravail\$dateRapport.csv"
+    $donnees | % { $_.Poids = [int]$_.Poids }
+    $pilliers = $donnees.Catégorie | Select-Object -Unique
 }
 catch{
     Write-Host "Impossible de traiter le fichier de contenu."
     Write-Host "Assurez vous que tous les fichiers d'entrée sont dans le bon format et qu'ils ne sont pas ouverts dans Excel ou un autre éditeur qui bloque le fichier."
-    Write-Error -Message "Il y a un problème lors de l'ouverture ou du traitement du fichier de contenu ($inputfile)."
+    Write-Error -Message "Il y a un problème lors de l'ouverture ou du traitement du fichier de contenu ($fichierEntree)."
     exit
 }
 
 
 #region Calculs CSV
 
-$descriptionCout = ($descriptionsFile | Where-Object{$_.Pillier -eq "Optimisation de Coût" -and $_.Catégorie -eq "Survey Level Group"}).Description
-$operationsDescription = ($descriptionsFile | Where-Object{$_.Pillier -eq "Excellence Opérationnelle" -and $_.Catégorie -eq "Survey Level Group"}).Description
-$performanceDescription = ($descriptionsFile | Where-Object{$_.Pillier -eq "Performance Efficiency" -and $_.Catégorie -eq "Survey Level Group"}).Description
-$reliabilityDescription = ($descriptionsFile | Where-Object{$_.Pillier -eq "Reliability" -and $_.Catégorie -eq "Survey Level Group"}).Description
-$descriptionSecurite = ($descriptionsFile | Where-Object{$_.Pillier -eq "Sécurité" -and $_.Catégorie -eq "Survey Level Group"}).Description
+$descriptionCout = ($fichierDescriptions | Where-Object{$_.Pillier -eq "Optimisation de Coût" -and $_.Catégorie -eq "Survey Level Group"}).Description
+$descriptionOperations = ($fichierDescriptions | Where-Object{$_.Pillier -eq "Excellence Opérationnelle" -and $_.Catégorie -eq "Survey Level Group"}).Description
+$descriptionPerformance = ($fichierDescriptions | Where-Object{$_.Pillier -eq "Efficacité des Performances" -and $_.Catégorie -eq "Survey Level Group"}).Description
+$descriptionFiabilite = ($fichierDescriptions | Where-Object{$_.Pillier -eq "Fiabilité" -and $_.Catégorie -eq "Survey Level Group"}).Description
+$descriptionSecurite = ($fichierDescriptions | Where-Object{$_.Pillier -eq "Sécurité" -and $_.Catégorie -eq "Survey Level Group"}).Description
 
-function Get-PillarInfo($pillar)
+function Prendre-InfosPillier($pillier)
 {
-    if($pillar.Contains("Optimisation de Coût"))
+    if($pillier.Contains("Optimisation de Coût"))
     {
-        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $scoreCout; "Description" = $descriptionCout}
+        return [pscustomobject]@{"Pillier" = $pillier; "Score" = $scoreCout; "Description" = $descriptionCout}
     }
-    if($pillar.Contains("Reliability"))
+    if($pillier.Contains("Fiabilité"))
     {
-        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $reliabilityScore; "Description" = $reliabilityDescription}
+        return [pscustomobject]@{"Pillier" = $pillier; "Score" = $scoreFiabilite; "Description" = $descriptionFiabilite}
     }
-    if($pillar.Contains("Excellence Opérationnelle"))
+    if($pillier.Contains("Excellence Opérationnelle"))
     {
-        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $operationsScore; "Description" = $operationsDescription}
+        return [pscustomobject]@{"Pillier" = $pillier; "Score" = $scoreOperations; "Description" = $descriptionOperations}
     }
-    if($pillar.Contains("Performance Efficiency"))
+    if($pillier.Contains("Efficacité des Performances"))
     {
-        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $performanceScore; "Description" = $performanceDescription}
+        return [pscustomobject]@{"Pillier" = $pillier; "Score" = $scorePerformance; "Description" = $descriptionPerformance}
     }
-    if($pillar.Contains("Sécurité"))
+    if($pillier.Contains("Sécurité"))
     {
-        return [pscustomobject]@{"Pillier" = $pillar; "Score" = $scoreSecurite; "Description" = $descriptionSecurite}
+        return [pscustomobject]@{"Pillier" = $pillier; "Score" = $scoreSecurite; "Description" = $descriptionSecurite}
     }
 }
 
-$overallScore = ""
+$scoreGlobal = ""
 $scoreCout = ""
-$operationsScore = ""
-$performanceScore = ""
-$reliabilityScore = ""
+$scoreOperations = ""
+$scorePerformance = ""
+$scoreFiabilite = ""
 $scoreSecurite = ""
 
 for($i=3; $i -le 8; $i++)
 {
-    if($Content[$i].Contains("overall"))
+    if($contenu[$i].Contains("global"))
     {
-        $overallScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
+        $scoreGlobal = $contenu[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
-    if($Content[$i].Contains("Optimisation de Coût"))
+    if($contenu[$i].Contains("Optimisation de Coût"))
     {
-        $scoreCout = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
+        $scoreCout = $contenu[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
-    if($Content[$i].Contains("Reliability"))
+    if($contenu[$i].Contains("Fiabilité"))
     {
-        $reliabilityScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
+        $scoreFiabilite = $contenu[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
-    if($Content[$i].Contains("Excellence Opérationnelle"))
+    if($contenu[$i].Contains("Excellence Opérationnelle"))
     {
-        $operationsScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
+        $scoreOperations = $contenu[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
-    if($Content[$i].Contains("Performance Efficiency"))
+    if($contenu[$i].Contains("Efficacité des Performances"))
     {
-        $performanceScore = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
+        $scorePerformance = $contenu[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
-    if($Content[$i].Contains("Sécurité"))
+    if($contenu[$i].Contains("Sécurité"))
     {
-        $scoreSecurite = $Content[$i].Split(',')[2].Trim("'").Split('/')[0]
+        $scoreSecurite = $contenu[$i].Split(',')[2].Trim("'").Split('/')[0]
     }
-    if($Content[$i].Equals(",,,,,"))
+    if($contenu[$i].Equals(",,,,,"))
     {
-        #End early if not all pillars assessed
+        #Fin prématurée si tous les pilliers ne sont pas évalués
         Break
     }
 }
@@ -171,145 +171,144 @@ for($i=3; $i -le 8; $i++)
 #endregion
 
 
-
 $application = New-Object -ComObject powerpoint.application
 $presentation = $application.Presentations.open($templatePresentation)
-$titleSlide = $presentation.Slides[8]
-$summarySlide = $presentation.Slides[9]
-$detailSlide = $presentation.Slides[10]
-$endSlide = $presentation.Slides[11]
+$diapoTitre = $presentation.Slides[8]
+$diapoSommaire = $presentation.Slides[9]
+$diapoDetail = $presentation.Slides[10]
+$diapoFin = $presentation.Slides[11]
 
 #endregion
 
-#region Clean the uncategorized data
+#region Nettoyage de données non catégorisées
 
-if($data.PSobject.Properties.Name -contains "CatégorieReporting"){
-    foreach($lineData in $data)
+if($donnees.PSobject.Properties.Name -contains "CatégorieReporting"){
+    foreach($ligneDonnees in $donnees)
     {
         
-        if(!$lineData.CatégorieReporting)
+        if(!$ligneDonnees.CatégorieReporting)
         {
-            $lineData.CatégorieReporting = "Uncategorized"
+            $ligneDonnees.CatégorieReporting = "Non categorisé"
         }
     }
 }
 
 #endregion
 
-foreach($pillar in $pillars) 
+foreach($pillier in $pilliers) 
 {
-    $pillarData = $data | Where-Object{$_.Catégorie -eq $pillar}
-    $pillarInfo = Get-PillarInfo -pillar $pillar
+    $donneesPillier = $donnees | Where-Object{$_.Catégorie -eq $pillier}
+    $InfoPillier = Prendre-InfoPillier -pillier $pillier
     
-    # Edit title & date on slide 1
-    $slideTitle = $title.Replace("[pillar]",$pillar.substring(0,1).toupper()+$pillar.substring(1).tolower())
-    $newTitleSlide = $titleSlide.Duplicate()
-    $newTitleSlide.MoveTo($presentation.Slides.Count)
-    $newTitleSlide.Shapes[3].TextFrame.TextRange.Text = $slideTitle
-    $newTitleSlide.Shapes[4].TextFrame.TextRange.Text = $newTitleSlide.Shapes[4].TextFrame.TextRange.Text.Replace("[Report_Date]",$localReportDate)
+    # Edit titre & date sur diapositive 1
+    $diapoTitre = $titre.Replace("[pillier]",$pillier.substring(0,1).toupper()+$pillier.substring(1).tolower())
+    $nouvelleDiapoTitre = $diapoTitre.Duplicate()
+    $nouvelleDiapoTitre.MoveTo($presentation.Slides.Count)
+    $nouvelleDiapoTitre.Shapes[3].TextFrame.TextRange.Text = $diapoTitre
+    $nouvelleDiapoTitre.Shapes[4].TextFrame.TextRange.Text = $nouvelleDiapoTitre.Shapes[4].TextFrame.TextRange.Text.Replace("[Date_Rapport]",$dateRapportLocale)
    
-    # Edit Executive Summary Slide
+    # Edit Diapo Sommaire
 
-    #Add logic to get overall score
-    $newSummarySlide = $summarySlide.Duplicate()
-    $newSummarySlide.MoveTo($presentation.Slides.Count)
-    $newSummarySlide.Shapes[3].TextFrame.TextRange.Text = $pillarInfo.Score
-    $newSummarySlide.Shapes[4].TextFrame.TextRange.Text = $pillarInfo.Description
-    [Single]$summBarScore = [int]$pillarInfo.Score*2.47+56
-    $newSummarySlide.Shapes[11].Left = $summBarScore
+    #Ajout de logique pour le score global
+    $nouvelleDiapoSommaire = $diapoSommaire.Duplicate()
+    $nouvelleDiapoSommaire.MoveTo($presentation.Slides.Count)
+    $nouvelleDiapoSommaire.Shapes[3].TextFrame.TextRange.Text = $infoPillier.Score
+    $nouvelleDiapoSommaire.Shapes[4].TextFrame.TextRange.Text = $infoPillier.Description
+    [Single]$summBarScore = [int]$infoPillier.Score*2.47+56
+    $nouvelleDiapoSommaire.Shapes[11].Left = $summBarScore
 
-    $CategoriesList = New-Object System.Collections.ArrayList
-    $categories = ($pillarData | Sort-Object -Property "Weight" -Descending).CatégorieReporting | Select-Object -Unique
-    foreach($category in $categories)
+    $listeCategories = New-Object System.Collections.ArrayList
+    $categories = ($donneesPillier | Sort-Object -Property "Poids" -Descending).CatégorieReporting | Select-Object -Unique
+    foreach($categorie in $categories)
     {
-        $categoryWeight = ($pillarData | Where-Object{$_.CatégorieReporting -eq $category}).Weight | Measure-Object -Sum
-        $categoryScore = $categoryWeight.Sum/$categoryWeight.Count
-        $categoryWeightiestCount = ($pillarData | Where-Object{$_.CatégorieReporting -eq $category}).Weight -ge $MinimumReportLevel | Measure-Object
-        $CategoriesList.Add([pscustomobject]@{"Catégorie" = $category; "CategoryScore" = $categoryScore; "CategoryWeightiestCount" = $categoryWeightiestCount.Count}) | Out-Null
+        $poidsCategorie = ($donneesPillier | Where-Object{$_.CatégorieReporting -eq $categorie}).Poids | Measure-Object -Sum
+        $scoreCategorie = $poidsCategorie.Sum/$poidsCategorie.Count
+        $poidsCategorieCount = ($donneesPillier | Where-Object{$_.CatégorieReporting -eq $categorie}).Poids -ge $MinimumReportLevel | Measure-Object
+        $listeCategories.Add([pscustomobject]@{"Catégorie" = $categorie; "ScoreCatégorie" = $scoreCategorie; "PoidsCatégorieCount" = $poidsCategorieCount.Count}) | Out-Null
     }
 
-    $CategoriesList = $CategoriesList | Sort-Object -Property CategoryScore -Descending
+    $listeCategories = $listeCategories | Sort-Object -Property ScoreCatégorie -Descending
 
-    $counter = 13 #Shape count for the slide to start adding scores
-    $categoryCounter = 0
+    $compteur = 13
+    $compteurCategorie = 0
     $areaIconX = 378.1129
     $areaIconY = @(176.4359, 217.6319, 258.3682, 299.1754, 339.8692, 382.6667, 423.9795, 461.0491)
-    foreach($category in $CategoriesList)
+    foreach($categorie in $listeCategories)
     {
-        if($category.Catégorie -ne "Uncategorized")
+        if($categorie.Catégorie -ne "Non categorisé")
         {
             try
             {
-                #$newSummarySlide.Shapes[8] #Domain 1 Icon
-                $newSummarySlide.Shapes[$counter].TextFrame.TextRange.Text = $category.CategoryWeightiestCount.ToString("#")
-                $newSummarySlide.Shapes[$counter+1].TextFrame.TextRange.Text = $category.Catégorie
-                $counter = $counter + 3
-                switch ($category.CategoryScore) {
+                #$nouvelleDiapoSommaire.Shapes[8] #Domain 1 Icon
+                $nouvelleDiapoSommaire.Shapes[$compteur].TextFrame.TextRange.Text = $categorie.PoidsCatégorieCount.ToString("#")
+                $nouvelleDiapoSommaire.Shapes[$compteur+1].TextFrame.TextRange.Text = $categorie.Catégorie
+                $compteur = $compteur + 3
+                switch ($categorie.ScoreCatégorie) {
                     { $_ -lt 33 } { 
-                        $categoryShape = $newSummarySlide.Shapes[37]
+                        $formeCategorie = $nouvelleDiapoSommaire.Shapes[37]
                     }
                     { $_ -gt 33 -and $_ -lt 67 } { 
-                        $categoryShape = $newSummarySlide.Shapes[38] 
+                        $formeCategorie = $nouvelleDiapoSommaire.Shapes[38] 
                     }
                     { $_ -gt 67 } { 
-                        $categoryShape = $newSummarySlide.Shapes[39] 
+                        $formeCategorie = $nouvelleDiapoSommaire.Shapes[39] 
                     }
                     Default { 
-                        $categoryShape = $newSummarySlide.Shapes[38] 
+                        $formeCategorie = $nouvelleDiapoSommaire.Shapes[38] 
                     }
                 }
-                $categoryShape.Duplicate() | Out-Null
-                $newShape = $newSummarySlide.Shapes.Count
-                $newSummarySlide.Shapes[$newShape].Left = $areaIconX
-                $newSummarySlide.Shapes[$newShape].top = $areaIcony[$categoryCounter] 
-                $categoryCounter = $categoryCounter + 1
+                $formeCategorie.Duplicate() | Out-Null
+                $nouvelleForme = $nouvelleDiapoSommaire.Shapes.Count
+                $nouvelleDiapoSommaire.Shapes[$nouvelleForme].Left = $areaIconX
+                $nouvelleDiapoSommaire.Shapes[$nouvelleForme].top = $areaIcony[$compteurCategorie] 
+                $compteurCategorie = $compteurCategorie + 1
             }
             catch{}
         }
     }
 
-    #Remove the boilerplate placeholder text if categories < 8
+    #Supprimer si categories < 8
     if($categories.Count -lt 8)
     {
-        $skipLastShape = $newSummarySlide.Shapes.count - $categoryCounter
-        for($k=$skipLastShape; $k -gt $counter-1; $k--)
+        $skipLastShape = $nouvelleDiapoSommaire.Shapes.count - $compteurCategorie
+        for($k=$skipLastShape; $k -gt $compteur-1; $k--)
         {
             try
             {
-                $newSummarySlide.Shapes[$k].Delete()
-                <#$newSummarySlide.Shapes[$k].Delete()
-                $newSummarySlide.Shapes[$k+1].Delete()#>
+                $nouvelleDiapoSommaire.Shapes[$k].Delete()
+                <#$nouvelleDiapoSommaire.Shapes[$k].Delete()
+                $nouvelleDiapoSommaire.Shapes[$k+1].Delete()#>
             }
             catch{}
         }
     }
 
-    # Edit new category summary slide
+    # Edit nouvelle diapo de sommaire catégorie
 
-    foreach($category in $CategoriesList.Catégorie)
+    foreach($categorie in $listeCategories.Catégorie)
     {
-        $categoryData = $pillarData | Where-Object{$_.CatégorieReporting -eq $category -and $_.Catégorie -eq $pillar}
-        $categoryDataCount = ($categoryData | measure).Count
-        $categoryWeight = ($pillarData | Where-Object{$_.CatégorieReporting -eq $category}).Weight | Measure-Object -Sum
-        $categoryScore = $categoryWeight.Sum/$categoryWeight.Count
-        $categoryDescription = ($descriptionsFile | Where-Object{$_.Pillier -eq $pillar -and $categoryData.CatégorieReporting.Contains($_.Catégorie)}).Description
-        $y = $categoryDataCount
+        $donneesCategorie = $donneesPillier | Where-Object{$_.CatégorieReporting -eq $categorie -and $_.Catégorie -eq $pillier}
+        $donneesCategorieCount = ($donneesCategorie | measure).Count
+        $poidsCategorie = ($donneesPillier | Where-Object{$_.CatégorieReporting -eq $categorie}).Poids | Measure-Object -Sum
+        $scoreCategorie = $poidsCategorie.Sum/$poidsCategorie.Count
+        $descriptionCategorie = ($fichierDescriptions | Where-Object{$_.Pillier -eq $pillier -and $donneesCategorie.CatégorieReporting.Contains($_.Catégorie)}).Description
+        $y = $donneesCategorieCount
         $x = 5
-        if($categoryDataCount -lt 5)
+        if($donneesCategorieCount -lt 5)
         {
-            $x = $categoryDataCount
+            $x = $donneesCategorieCount
         }
 
         $newDetailSlide = $detailSlide.Duplicate()
         $newDetailSlide.MoveTo($presentation.Slides.Count)
 
-        $newDetailSlide.Shapes[1].TextFrame.TextRange.Text = $category
-        $newDetailSlide.Shapes[3].TextFrame.TextRange.Text = $categoryScore.ToString("#")
-        [Single]$detailBarScore = $categoryScore*2.48+38
+        $newDetailSlide.Shapes[1].TextFrame.TextRange.Text = $categorie
+        $newDetailSlide.Shapes[3].TextFrame.TextRange.Text = $scoreCategorie.ToString("#")
+        [Single]$detailBarScore = $scoreCategorie*2.48+38
         $newDetailSlide.Shapes[12].Left = $detailBarScore
         $newDetailSlide.Shapes[4].TextFrame.TextRange.Text = $categoryDescription
         $newDetailSlide.Shapes[7].TextFrame.TextRange.Text = "Top $x out of $y recommendations:"
-        $newDetailSlide.Shapes[8].TextFrame.TextRange.Text = ($categoryData | Sort-Object -Property "Link-Text" -Unique | Sort-Object -Property Weight -Descending | Select-Object -First $x).'Link-Text' -join "`r`n`r`n"
+        $newDetailSlide.Shapes[8].TextFrame.TextRange.Text = ($categoryData | Sort-Object -Property "Link-Text" -Unique | Sort-Object -Property Poids -Descending | Select-Object -First $x).'Link-Text' -join "`r`n`r`n"
         $sentenceCount = $newDetailSlide.Shapes[8].TextFrame.TextRange.Sentences().count
 
         for($k=1; $k -le $sentenceCount; $k++)
@@ -334,7 +333,7 @@ $titleSlide.Delete()
 $summarySlide.Delete()
 $detailSlide.Delete()
 $endSlide.Delete()
-$presentation.SavecopyAs("$workingDirectory\PnP_PowerPointReport_Template_$reportDate.pptx")
+$presentation.SavecopyAs("$dossierTravail\PnP_Template_Rapport_PowerPoint_$dateRapport.pptx")
 $presentation.Close()
 
 
