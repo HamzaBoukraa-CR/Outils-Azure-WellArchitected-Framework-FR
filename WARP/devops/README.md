@@ -1,73 +1,73 @@
 ---
-title: DevOps Tooling for Well-Architected Recommendation Process
-description: Instructions for using theDevOps Tooling for Well-Architected Recommendation Process
-author: drspott
-ms.date: 09/14/2021
-ms.topic: conceptual
+Titre: Outillage DevOps pour le processus de recommendations de Azure Well-Architected Framework
+Description: Instructions pour l'utilisation de l'Outillage DevOps pour le processus de recommendations de Azure Well-Architected Framework
+Auteur: HamzaBoukraa
+ms.date: 09/06/2022
+ms.topic: conceptuel
 ms.service: architecture-center
 ms.subservice: well-architected
 ms.custom:
   - guide
-keywords:
-  - "Well-Architected Recommendation Process"
-  - "Azure Well-Architected Recommendation Process"
+mots clefs:
+  - "Processus de recommendations Well-Architected Framework"
+  - "Processus de recommendations Azure Well-Architected Framework"
   - "WARP"
-  - "Well architected recommendation process"
-  - 'Tooling'
-products:
+  - "Processus de recommendations Well architected"
+  - 'Outillage'
+produits:
   - azure-devops
-categories:
+catégories:
   - devops
 ---
 
-# DevOps Tooling for Well-Architected Recommendation Process
+# Outillage DevOps pour le Processus de Recommendations Azure Well-Architected
 
 ## Overview
 
-There are four sections to this document:
+Il y a quatre sections dans ce document :
 
-1. Preparation
+1. Préparation
 1. Reporting
-1. Place findings into an Azure DevOps project
-1. Importing to GitHub
+1. Placer les outputs dans un projet Azure DevOps
+1. Importer dans GitHub
 
-## Preparation
+## Préparation
 
-### Prerequisites
+### Prérequis
 
-- A ***new or empty*** DevOps project using an agile framework. Instructions to create this project are below.
+- Un project Azure DevOps ***nouveau ou vide*** utilisant un framework agile. Les instructions pour créer ce projet sont listées ci-dessous.
 
- - We encourage users of this example script to test on a non-production DevOps project to better understand how recommendations are presented in Azure DevOps.
+ - Les utilisateurs de cet exemple sont encouragés à tester sur un projet DevOps de non-production DevOps pour bien comprendre comment les recommendations sont représentées dans Azure DevOps.
 
- - After testing, users of this example script are encouraged to import recommendations into an appropriate Azure DevOps project for work planning and execution. 
+ - Après les tests, les utilisateurs de cet exemple sont encouragés à importer les recommendations dans un projet Azure DevOps adéquat pour bien planifier et exécuter le travail. 
 
-    **or**
+    **ou**
 
-- A ***new or empty*** GitHub repo to receive these items.
+- Un repo GitHub ***nouveau ou vide*** GitHub pour recevoir ces éléments.
 
- - We encourage users of this example script to test on a non-production Github project to better understand how recommendations are presented in Github.
+ - Les utilisateurs de cet exemple sont encouragés à tester sur un projet GitHub de non-production DevOps pour bien comprendre comment les recommendations sont représentées dans Github.
 
- - After testing, users of this example script are encouraged to import recommendations into an appropriate GitHub project for work planning and execution. 
+ - Après les tests, les utilisateurs de cet exemple sont encouragés à importer les recommendations dans un projet GitHub adéquat pour bien planifier et exécuter le travail. 
 
-- Windows 10 or greater.
+- Windows 10 (ou plus récent).
 
 - PowerShell v7
 
 - Microsoft PowerPoint 2019
 
- - PowerPoint is not required for importing findings into Azure DevOps or Github.
+ - PowerPoint n'est pas requis pour importer les outputs dans Azure DevOps ou Github.
 
- - Only required for creating PowerPoint slideshows outlining the issues found.
+ - Seulement requis pour créer des présentations PowerPoint surlignant les problèmes détectés.
 
 ---
 
-**IMPORTANT:**  **These instructions only work in a Windows environment at this time.**
+**IMPORTANT:**  **Ces instructions fonctionnent seulement sur un environnement Windows à ce stade.**
 
-### Download scripts and prepare your environment to run them.
+### Télécharger les scripts et préparer votre environnement pour les exécuter.
 
-1. Download and install [PowerShell 7](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell)
+1. Télécharger et installer [PowerShell 7](https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell)
 
-1. Open a PowerShell terminal and run the following commands from within a new or existing directory:
+1. Lancer un terminal PowerShell et lancer les commandes suivantes à partir d'un dossier de travail:
 
     ```powershell
     $installUri = "https://raw.githubusercontent.com/Azure/WellArchitected-Tools/main/WARP/devops/install-WARP-tools.ps1"
